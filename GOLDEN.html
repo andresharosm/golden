@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Snake Game</title>
+  <style>
+  @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap');
+
+  html, body {
+    height: 100%;
+    margin: 0;
+  }
+
+  body {
+    background: #efb810;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+  }
+  canvas {
+    border: 1px solid white;
+    background: white;
+  }
+  #score-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 20px;
+  }
+  #score {
+    font-size: 24px;
+    font-weight: bold;
+    font-family: 'Montserrat', sans-serif;
+    color: white;
+  }
+  #score-image {
+    width: 200px;
+    height: auto;
+    margin-bottom: 15px;
+  }
+  #signature {
+    margin-top: 20px;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 18px;
+    color: white;
+  }
+  #game-over {
+    display: none;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: white;
+    padding: 20px;
+    text-align: center;
+    border-radius: 10px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+    font-family: 'Montserrat', sans-serif;
+  }
+  #restart-button {
+    margin-top: 10px;
+    padding: 10px;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 16px;
+    cursor: pointer;
+  }
+  </style>
+</head>
+<body>
+<div id="score-container">
+  <img id="score-image" src="https://cdn.shopify.com/s/files/1/0738/2030/7704/files/Untitled-1.png?v=1741980877" alt="Score Image">
+  <div id="score">Score: 0</div>
+</div>
+<canvas width="400" height="400" id="game"></canvas>
+<div id="signature">@_golden2025_</div>
+<div id="game-over">
+  <h2>Game Over</h2>
+  <p id="final-score"></p>
+  <button id="restart-button">Reiniciar</button>
+</div>
+<script>
+var canvas = document.getElementById('game');
+var context = canvas.getContext('2d');
+var scoreElement = document.getElementById('score');
+var gameOverScreen = document.getElementById('game-over');
+var finalScoreElement = document.getElementById('final-score');
+var restartButton = document.getElementById('restart-button');
+var grid = 16;
+var count = 0;
+var score = 0;
+var gameRunning = true;
+var heartImage = new Image();
+heartImage.src = "https://em-content.zobj.net/source/apple/81/yellow-heart_1f49b.png";
+
+restartButton.addEventListener('click', function() {
+  gameOverScreen.style.display = 'none';
+  score = 0;
+  scoreElement.textContent = "Score: " + score;
+  snake = { x: 160, y: 160, dx: grid, dy: 0, cells: [], maxCells: 4 };
+  apple = { x: getRandomInt(0, 25) * grid, y: getRandomInt(0, 25) * grid };
+  gameRunning = true;
+  requestAnimationFrame(loop);
+});
+
+function drawGrid() {
+  for (let x = 0; x < canvas.width; x += grid) {
+    for (let y = 0; y < canvas.height; y += grid) {
+      context.fillStyle = (x / grid + y / grid) % 2 === 0 ? '#f0f0f0' : '#dcdcdc';
+      context.fillRect(x, y, grid, grid);
+    }
+  }
+}
+
+var snake = {
+  x: 160,
+  y: 160,
+  dx: grid,
+  dy: 0,
+  cells: [],
+  maxCells: 4
+};
+var apple = {
+  x: 320,
+  y: 320
+};
+
+function getRandomInt(min, max) {
+  return Math.floor(Math.random() * (max - min)) + min;
+}
+
+function loop() {
+  if (!gameRunning) return;
+  requestAnimationFrame(loop);
+
+  if (++count < 4) {
+    return;
+  }
+
+  count = 0;
+  drawGrid();
+
+  snake.x += snake.dx;
+  snake.y += snake.dy;
+
+  snake.cells.unshift({x: snake.x, y: snake.y});
+
+  if (snake.cells.length > snake.maxCells) {
+    snake.cells.pop();
+  }
+
+  context.drawImage(heartImage, apple.x, apple.y, grid, grid);
+
+  context.fillStyle = 'green';
+  snake.cells.forEach(function(cell, index) {
+    context.beginPath();
+    context.arc(cell.x + grid / 2, cell.y + grid / 2, grid / 2, 0, Math.PI * 2);
+    context.fill();
+    
+    if (cell.x === apple.x && cell.y === apple.y) {
+      snake.maxCells++;
+      score++;
+      scoreElement.textContent = "Score: " + score;
+      apple.x = getRandomInt(0, 25) * grid;
+      apple.y = getRandomInt(0, 25) * grid;
+    }
+
+    for (var i = index + 1; i < snake.cells.length; i++) {
+      if (cell.x === snake.cells[i].x && cell.y === snake.cells[i].y) {
+        finalScoreElement.textContent = "Puntaje final: " + score;
+        gameOverScreen.style.display = 'block';
+        gameRunning = false;
+        return;
+      }
+    }
+  });
+}
+
+document.addEventListener('keydown', function(e) {
+  if (e.which === 37 && snake.dx === 0) {
+    snake.dx = -grid;
+    snake.dy = 0;
+  } else if (e.which === 38 && snake.dy === 0) {
+    snake.dy = -grid;
+    snake.dx = 0;
+  } else if (e.which === 39 && snake.dx === 0) {
+    snake.dx = grid;
+    snake.dy = 0;
+  } else if (e.which === 40 && snake.dy === 0) {
+    snake.dy = grid;
+    snake.dx = 0;
+  }
+});
+
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
