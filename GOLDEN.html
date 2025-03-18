@@ -16,6 +16,7 @@
     align-items: center;
     justify-content: center;
     flex-direction: column;
+    touch-action: none;
   }
   canvas {
     border: 1px solid white;
@@ -50,19 +51,21 @@
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    background: white;
+    background: rgba(0,0,0,0.8);
+    color: white;
     padding: 20px;
-    text-align: center;
     border-radius: 10px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
     font-family: 'Montserrat', sans-serif;
+    text-align: center;
   }
-  #restart-button {
-    margin-top: 10px;
-    padding: 10px;
-    font-family: 'Montserrat', sans-serif;
-    font-size: 16px;
+  #restart-btn {
+    margin-top: 15px;
+    padding: 10px 20px;
     cursor: pointer;
+    font-size: 18px;
+    background-color: #ffcc00;
+    border: none;
+    border-radius: 5px;
   }
   </style>
 </head>
@@ -74,88 +77,84 @@
 <canvas width="400" height="400" id="game"></canvas>
 <div id="signature">@_golden2025_</div>
 <div id="game-over">
-  <h2>Game Over</h2>
-  <p id="final-score"></p>
-  <button id="restart-button">Reiniciar</button>
+  <div>Game Over</div>
+  <div>Final Score: <span id="final-score">0</span></div>
+  <button id="restart-btn">Restart</button>
 </div>
 <script>
 var canvas = document.getElementById('game');
 var context = canvas.getContext('2d');
 var scoreElement = document.getElementById('score');
-var gameOverScreen = document.getElementById('game-over');
 var finalScoreElement = document.getElementById('final-score');
-var restartButton = document.getElementById('restart-button');
+var gameOverScreen = document.getElementById('game-over');
+var restartBtn = document.getElementById('restart-btn');
 var grid = 16;
 var count = 0;
 var score = 0;
+var speed = 4;
 var gameRunning = true;
 var heartImage = new Image();
 heartImage.src = "https://em-content.zobj.net/source/apple/81/yellow-heart_1f49b.png";
 
-restartButton.addEventListener('click', function() {
-  gameOverScreen.style.display = 'none';
-  score = 0;
-  scoreElement.textContent = "Score: " + score;
-  snake = { x: 160, y: 160, dx: grid, dy: 0, cells: [], maxCells: 4 };
-  apple = { x: getRandomInt(0, 25) * grid, y: getRandomInt(0, 25) * grid };
-  gameRunning = true;
-  requestAnimationFrame(loop);
-});
+
 
 function drawGrid() {
-  for (let x = 0; x < canvas.width; x += grid) {
-    for (let y = 0; y < canvas.height; y += grid) {
-      context.fillStyle = (x / grid + y / grid) % 2 === 0 ? '#f0f0f0' : '#dcdcdc';
-      context.fillRect(x, y, grid, grid);
-    }
-  }
+  context.fillStyle = '#ffffff';
+  context.fillRect(0, 0, canvas.width, canvas.height);
 }
 
-var snake = {
-  x: 160,
-  y: 160,
-  dx: grid,
-  dy: 0,
-  cells: [],
-  maxCells: 4
-};
-var apple = {
-  x: 320,
-  y: 320
-};
+var snake = {x:160, y:160, dx:grid, dy:0, cells:[], maxCells:4};
+var apple = {x:320, y:320};
 
 function getRandomInt(min, max) {
   return Math.floor(Math.random() * (max - min)) + min;
 }
 
+function gameOver() {
+  gameRunning = false;
+  gameOverScreen.style.display = 'block';
+  finalScoreElement.textContent = score;
+}
+
+function restartGame() {
+  gameOverScreen.style.display = 'none';
+  snake = { x: 160, y: 160, dx: grid, dy: 0, cells: [], maxCells: 4 };
+  apple = { x: 320, y: 320 };
+  score = 0;
+  speed = 4;
+  scoreElement.textContent = 'Score: ' + score;
+  gameRunning = true;
+  requestAnimationFrame(loop);
+}
+
 function loop() {
   if (!gameRunning) return;
+
   requestAnimationFrame(loop);
 
-  if (++count < 4) {
-    return;
-  }
-
+  if (++count < speed) return;
   count = 0;
   drawGrid();
 
   snake.x += snake.dx;
   snake.y += snake.dy;
 
-  snake.cells.unshift({x: snake.x, y: snake.y});
+  if (snake.x < 0) snake.x = canvas.width - grid;
+  else if (snake.x >= canvas.width) snake.x = 0;
 
-  if (snake.cells.length > snake.maxCells) {
-    snake.cells.pop();
-  }
+  if (snake.y < 0) snake.y = canvas.height - grid;
+  else if (snake.y >= canvas.height) snake.y = 0;
+
+  snake.cells.unshift({ x: snake.x, y: snake.y });
+  if (snake.cells.length > snake.maxCells) snake.cells.pop();
 
   context.drawImage(heartImage, apple.x, apple.y, grid, grid);
 
   context.fillStyle = 'green';
   snake.cells.forEach(function(cell, index) {
     context.beginPath();
-    context.arc(cell.x + grid / 2, cell.y + grid / 2, grid / 2, 0, Math.PI * 2);
+    context.arc(cell.x + grid/2, cell.y + grid/2, grid/2, 0, 2*Math.PI);
     context.fill();
-    
     if (cell.x === apple.x && cell.y === apple.y) {
       snake.maxCells++;
       score++;
@@ -163,32 +162,54 @@ function loop() {
       apple.x = getRandomInt(0, 25) * grid;
       apple.y = getRandomInt(0, 25) * grid;
     }
-
     for (var i = index + 1; i < snake.cells.length; i++) {
       if (cell.x === snake.cells[i].x && cell.y === snake.cells[i].y) {
-        finalScoreElement.textContent = "Puntaje final: " + score;
-        gameOverScreen.style.display = 'block';
         gameRunning = false;
+        gameOver();
         return;
       }
     }
   });
 }
 
-document.addEventListener('keydown', function(e) {
-  if (e.which === 37 && snake.dx === 0) {
-    snake.dx = -grid;
-    snake.dy = 0;
-  } else if (e.which === 38 && snake.dy === 0) {
-    snake.dy = -grid;
-    snake.dx = 0;
-  } else if (e.which === 39 && snake.dx === 0) {
-    snake.dx = grid;
-    snake.dy = 0;
-  } else if (e.which === 40 && snake.dy === 0) {
-    snake.dy = grid;
-    snake.dx = 0;
+let touchStartX = 0;
+let touchStartY = 0;
+
+canvas.addEventListener('touchstart', function(e) {
+  touchStartX = e.touches[0].clientX;
+  touchStartY = e.touches[0].clientY;
+});
+
+canvas.addEventListener('touchend', function(e) {
+  if (!gameRunning) return;
+
+  let touchEndX = e.changedTouches[0].clientX;
+  let touchEndY = e.changedTouches[0].clientY;
+
+  let deltaX = touchEndX - touchStartX;
+  let deltaY = touchEndY - touchStartY;
+
+  if (Math.abs(deltaX) > Math.abs(deltaY)) {
+    if (deltaX > 0 && snake.dx === 0) { snake.dx = grid; snake.dy = 0; }
+    else if (deltaX < 0 && snake.dx === 0) { snake.dx = -grid; snake.dy = 0; }
+  } else {
+    if (deltaY > 0 && snake.dy === 0) { snake.dy = grid; snake.dx = 0; }
+    else if (deltaY < 0 && snake.dy === 0) { snake.dy = -grid; snake.dx = 0; }
   }
+});
+
+document.addEventListener('keydown', function(e) {
+  if (!gameRunning) return;
+  if (e.key === 'ArrowLeft' && snake.dx === 0) { snake.dx = -grid; snake.dy = 0; }
+  else if (e.key === 'ArrowUp' && snake.dy === 0) { snake.dy = -grid; snake.dx = 0; }
+  else if (e.key === 'ArrowRight' && snake.dx === 0) { snake.dx = grid; snake.dy = 0; }
+  else if (e.key === 'ArrowDown' && snake.dy === 0) { snake.dy = grid; snake.dx = 0; }
+});
+
+restartBtn.addEventListener('click', function() {
+  speed = 4;
+  gameRunning = true;
+  restartGame();
 });
 
 requestAnimationFrame(loop);
