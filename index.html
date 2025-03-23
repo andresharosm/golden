@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Snake Game</title>
+  <style>
+  @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap');
+
+  html, body {
+    height: 100%;
+    margin: 0;
+  }
+
+  body {
+    background: #efb810;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    touch-action: none;
+  }
+  canvas {
+    border: 1px solid white;
+    background: white;
+  }
+  #score-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 20px;
+  }
+  #score {
+    font-size: 24px;
+    font-weight: bold;
+    font-family: 'Montserrat', sans-serif;
+    color: white;
+  }
+  #score-image {
+    width: 200px;
+    height: auto;
+    margin-bottom: 15px;
+  }
+  #signature {
+    margin-top: 20px;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 18px;
+    color: white;
+  }
+  #game-over {
+    display: none;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0,0,0,0.8);
+    color: white;
+    padding: 20px;
+    border-radius: 10px;
+    font-family: 'Montserrat', sans-serif;
+    text-align: center;
+  }
+  #restart-btn {
+    margin-top: 15px;
+    padding: 10px 20px;
+    cursor: pointer;
+    font-size: 18px;
+    background-color: #ffcc00;
+    border: none;
+    border-radius: 5px;
+  }
+  </style>
+</head>
+<body>
+<div id="score-container">
+  <img id="score-image" src="https://cdn.shopify.com/s/files/1/0738/2030/7704/files/Untitled-1.png?v=1741980877" alt="Score Image">
+  <div id="score">Score: 0</div>
+</div>
+<canvas width="400" height="400" id="game"></canvas>
+<div id="signature">@_golden2025_</div>
+<div id="game-over">
+  <div>Game Over</div>
+  <div>Final Score: <span id="final-score">0</span></div>
+  <button id="restart-btn">Restart</button>
+</div>
+<script>
+var canvas = document.getElementById('game');
+var context = canvas.getContext('2d');
+var scoreElement = document.getElementById('score');
+var finalScoreElement = document.getElementById('final-score');
+var gameOverScreen = document.getElementById('game-over');
+var restartBtn = document.getElementById('restart-btn');
+var grid = 16;
+var count = 0;
+var score = 0;
+var speed = 4;
+var gameRunning = true;
+var heartImage = new Image();
+heartImage.src = "https://em-content.zobj.net/source/apple/81/yellow-heart_1f49b.png";
+
+
+
+function drawGrid() {
+  context.fillStyle = '#ffffff';
+  context.fillRect(0, 0, canvas.width, canvas.height);
+}
+
+var snake = {x:160, y:160, dx:grid, dy:0, cells:[], maxCells:4};
+var apple = {x:320, y:320};
+
+function getRandomInt(min, max) {
+  return Math.floor(Math.random() * (max - min)) + min;
+}
+
+function gameOver() {
+  gameRunning = false;
+  gameOverScreen.style.display = 'block';
+  finalScoreElement.textContent = score;
+}
+
+function restartGame() {
+  gameOverScreen.style.display = 'none';
+  snake = { x: 160, y: 160, dx: grid, dy: 0, cells: [], maxCells: 4 };
+  apple = { x: 320, y: 320 };
+  score = 0;
+  speed = 4;
+  scoreElement.textContent = 'Score: ' + score;
+  gameRunning = true;
+  requestAnimationFrame(loop);
+}
+
+function loop() {
+  if (!gameRunning) return;
+
+  requestAnimationFrame(loop);
+
+  if (++count < speed) return;
+  count = 0;
+  drawGrid();
+
+  snake.x += snake.dx;
+  snake.y += snake.dy;
+
+  if (snake.x < 0) snake.x = canvas.width - grid;
+  else if (snake.x >= canvas.width) snake.x = 0;
+
+  if (snake.y < 0) snake.y = canvas.height - grid;
+  else if (snake.y >= canvas.height) snake.y = 0;
+
+  snake.cells.unshift({ x: snake.x, y: snake.y });
+  if (snake.cells.length > snake.maxCells) snake.cells.pop();
+
+  context.drawImage(heartImage, apple.x, apple.y, grid, grid);
+
+  context.fillStyle = 'green';
+  snake.cells.forEach(function(cell, index) {
+    context.beginPath();
+    context.arc(cell.x + grid/2, cell.y + grid/2, grid/2, 0, 2*Math.PI);
+    context.fill();
+    if (cell.x === apple.x && cell.y === apple.y) {
+      snake.maxCells++;
+      score++;
+      scoreElement.textContent = "Score: " + score;
+      apple.x = getRandomInt(0, 25) * grid;
+      apple.y = getRandomInt(0, 25) * grid;
+    }
+    for (var i = index + 1; i < snake.cells.length; i++) {
+      if (cell.x === snake.cells[i].x && cell.y === snake.cells[i].y) {
+        gameRunning = false;
+        gameOver();
+        return;
+      }
+    }
+  });
+}
+
+let touchStartX = 0;
+let touchStartY = 0;
+
+canvas.addEventListener('touchstart', function(e) {
+  touchStartX = e.touches[0].clientX;
+  touchStartY = e.touches[0].clientY;
+});
+
+canvas.addEventListener('touchend', function(e) {
+  if (!gameRunning) return;
+
+  let touchEndX = e.changedTouches[0].clientX;
+  let touchEndY = e.changedTouches[0].clientY;
+
+  let deltaX = touchEndX - touchStartX;
+  let deltaY = touchEndY - touchStartY;
+
+  if (Math.abs(deltaX) > Math.abs(deltaY)) {
+    if (deltaX > 0 && snake.dx === 0) { snake.dx = grid; snake.dy = 0; }
+    else if (deltaX < 0 && snake.dx === 0) { snake.dx = -grid; snake.dy = 0; }
+  } else {
+    if (deltaY > 0 && snake.dy === 0) { snake.dy = grid; snake.dx = 0; }
+    else if (deltaY < 0 && snake.dy === 0) { snake.dy = -grid; snake.dx = 0; }
+  }
+});
+
+document.addEventListener('keydown', function(e) {
+  if (!gameRunning) return;
+  if (e.key === 'ArrowLeft' && snake.dx === 0) { snake.dx = -grid; snake.dy = 0; }
+  else if (e.key === 'ArrowUp' && snake.dy === 0) { snake.dy = -grid; snake.dx = 0; }
+  else if (e.key === 'ArrowRight' && snake.dx === 0) { snake.dx = grid; snake.dy = 0; }
+  else if (e.key === 'ArrowDown' && snake.dy === 0) { snake.dy = grid; snake.dx = 0; }
+});
+
+restartBtn.addEventListener('click', function() {
+  speed = 4;
+  gameRunning = true;
+  restartGame();
+});
+
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
